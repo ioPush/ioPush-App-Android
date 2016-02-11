@@ -85,117 +85,68 @@ public class RegistrationIntentService extends IntentService {
         }*/
     }
 
-    /** Issue post request
-     * http://stackoverflow.com/questions/16504527/how-to-do-an-https-post-from-android
+    /**
+     * HTTP request with POST method
      * @param urlStr
      * @param user
      * @param password
+     * @param data
+     * @param headers
+     * @param timeOut
      * @return
      * @throws IOException
      */
-    private String httpPost(String urlStr, String user, String password) throws IOException
+    private HttpResultHelper httpPost(String urlStr, String user, String password, String data, String[][] headers, int timeOut) throws IOException
     {
+        // Set url
         URL url = new URL(urlStr);
-        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-        // Create the SSL connection
-        try {
-            SSLContext sc;
-            sc = SSLContext.getInstance("TLS");
-            sc.init(null, null, new java.security.SecureRandom());
-            conn.setSSLSocketFactory(sc.getSocketFactory());
-        } catch (Exception e) {
-            Log.d(TAG, "Failed to construct SSL object", e);
+        // If secure connection
+        if (urlStr.startsWith("https")) {
+            try {
+                SSLContext sc;
+                sc = SSLContext.getInstance("TLS");
+                sc.init(null, null, new java.security.SecureRandom());
+                ((HttpsURLConnection)conn).setSSLSocketFactory(sc.getSocketFactory());
+            } catch (Exception e) {
+                Log.d(TAG, "Failed to construct SSL object", e);
+            }
         }
 
 
-        // Use this if you need SSL authentication
-        String userpass = user + ":" + password;
-        String basicAuth = "Basic " + Base64.encodeToString(userpass.getBytes(), Base64.DEFAULT);
-        conn.setRequestProperty("Authorization", basicAuth);
+        // Use this if you need basic authentication
+        if ((user != null) && (password != null)) {
+            String userPass = user + ":" + password;
+            String basicAuth = "Basic " + Base64.encodeToString(userPass.getBytes(), Base64.DEFAULT);
+            conn.setRequestProperty("Authorization", basicAuth);
+        }
 
-        // set Timeout and method
+        // Set Timeout and method
         conn.setRequestProperty("Connection", "close"); // Connection must be closed in order to set length of next request ??
-        conn.setReadTimeout(7000);
-        conn.setConnectTimeout(7000);
-        conn.setRequestMethod("POST");
-        conn.setDoInput(true);
-
-        // Add any data you wish to post here
-
-        conn.connect();
-        int status = conn.getResponseCode();
-        Log.i(TAG, "Post status : " + status);
-
-        InputStream is = conn.getInputStream();
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(is));
-        String inputLine;
-        String result = new String();
-        while ((inputLine = in.readLine()) != null) {
-            result += inputLine;
-            Log.i(TAG, "Received : " + inputLine);
-        }
-
-        conn.disconnect();
-
-        return result;
-    }
-
-    private InputStream httpPostDevice(String urlStr, String authToken, String regId) throws IOException
-    {
-        URL url = new URL(urlStr);
-        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-
-        // Create the SSL connection
-        try {
-            SSLContext sc;
-            sc = SSLContext.getInstance("TLS");
-            sc.init(null, null, new java.security.SecureRandom());
-            conn.setSSLSocketFactory(sc.getSocketFactory());
-        } catch (Exception e) {
-            Log.d(TAG, "Failed to construct SSL object", e);
-        }
-
-        // Set parameters
-        String param="{\"service\": \"" + "AndroidGCM" +
-                "\", \"regId\": \"" + regId +
-                "\", \"name\": \"" + "Xiaomi Redmi" + "\"}";
-        Log.i(TAG, "Param : " + param);
-
+        conn.setReadTimeout(timeOut);
+        conn.setConnectTimeout(timeOut);
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
-        // Set Timeout and method
-        conn.setReadTimeout(7000);
-        conn.setConnectTimeout(7000);
+        try {
+            for (int i=0; i<=headers.length; i++) {
+                // conn.setRequestProperty("authentication_token", authToken);
+                conn.setRequestProperty(headers[i][0], headers[i][1]);
+            }
+        } catch (NullPointerException e) {
+        } catch (IndexOutOfBoundsException e) {
+        }
 
-        // Add headers
-        // conn.setRequestProperty( "Accept-Encoding", "");
-        //conn.setRequestProperty("Connection", "close");
-        conn.setRequestProperty("authentication_token", authToken);
-        conn.setFixedLengthStreamingMode(param.getBytes().length);
-        conn.setRequestProperty("Content-Type", "application/json");
-
-
-
-
-        // Send the request
-        /*PrintWriter out = new PrintWriter(conn.getOutputStream());
-        out.print(param);
-        out.close();*/
-
-        OutputStream os = conn.getOutputStream();
-        BufferedWriter writer = new BufferedWriter(
-                new OutputStreamWriter(os, "UTF-8"));
-        writer.write(param);
-        writer.flush();
-        writer.close();
-        os.close();
-
-        int status = conn.getResponseCode();
-        Log.i(TAG, "Post status : " + status);
-        Log.i(TAG, conn.getResponseMessage());
-        conn.getErrorStream();
+        if (data != null) {
+            conn.setFixedLengthStreamingMode(data.getBytes().length);
+            OutputStream os = conn.getOutputStream();
+            BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(os, "UTF-8"));
+            writer.write(data);
+            writer.flush();
+            writer.close();
+            os.close();
+        }
 
         InputStream inputStream = null;
         try
@@ -206,7 +157,12 @@ public class RegistrationIntentService extends IntentService {
         {
             inputStream = conn.getErrorStream();
         }
-        return inputStream;
+
+        HttpResultHelper result = new HttpResultHelper();
+        result.setStatusCode(conn.getResponseCode());
+        result.setResponse(inputStream);
+
+        return result;
     }
 
     /**
@@ -218,21 +174,43 @@ public class RegistrationIntentService extends IntentService {
      * @param regId The new token.
      */
     private void sendRegistrationToServer(String regId) {
-        String result = new String();
-        // Get authentication key
+        String result, inputLine = new String();
+
         try {
-            result = httpPost("https://ioPush.net/app/api/getAuthToken", "oliv4945@gmail.com", "*******");
-            // result = httpPost("http://192.168.0.14:5000/api/getAuthToken", "oliv4945@gmail.com", "aatest");
-            // is = httpPostDevice("https://ioPush.net/app/api/addDevice", result, regId);
-            String inputLine;
-            // InputStream is = httpPostDevice("http://192.168.0.14:5000/api/addDevice", result, regId);
-            InputStream is = httpPostDevice("https://ioPush.net/app/api/addDevice", result, regId);
-            BufferedReader in = new BufferedReader(new InputStreamReader(is));
+            // Get authentication key
+            HttpResultHelper httpResult = httpPost("https://ioPush.net/app/api/getAuthToken", "oliv4945@gmail.com", "aatest", null, null, 7000);
+            BufferedReader in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
             result = "";
             while ((inputLine = in.readLine()) != null) {
                 result += inputLine;
-                Log.i(TAG, "Received : " + inputLine);
             }
+            if (httpResult.getStatusCode() == 200) {
+                Log.i(TAG, "Result : " + result);
+                String data="{\"service\": \"" + "AndroidGCM" +
+                        "\", \"regId\": \"" + regId +
+                        "\", \"name\": \"" + "Xiaomi Redmi" + "\"}";
+                String[][] headers = new String[2][2];
+                headers[0][0] = "authentication_token";
+                headers[0][1] = result;
+                headers[1][0] = "Content-Type";
+                headers[1][1] = "application/json";
+                httpResult = httpPost("https://ioPush.net/app/api/addDevice", null, null, data, headers, 7000);
+                in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
+                result = "";
+                while ((inputLine = in.readLine()) != null) {
+                    result += inputLine;
+                }
+                if (httpResult.getStatusCode() == 200) {
+                    Log.i(TAG, "Result 2 : " + result);
+                } else {
+                    Log.i(TAG, "Failed 2 to issue post request, error code : " + httpResult.getStatusCode());
+                    Log.i(TAG, "Error 2 message : " + result);
+                }
+            } else {
+                Log.i(TAG, "Failed to issue post request, error code : " + httpResult.getStatusCode());
+                Log.i(TAG, "Error message : " + result);
+            }
+
         } catch (Exception e) {
             Log.d(TAG, "Failed to issue post request", e);
         }
