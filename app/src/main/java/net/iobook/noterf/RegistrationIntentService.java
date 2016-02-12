@@ -23,14 +23,13 @@ import javax.net.ssl.SSLContext;
 import android.util.Base64;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.URLEncoder;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
-
 import java.io.OutputStream;
-
 import java.net.HttpURLConnection;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class RegistrationIntentService extends IntentService {
 
@@ -123,7 +122,7 @@ public class RegistrationIntentService extends IntentService {
         }
 
         // Set Timeout and method
-        conn.setRequestProperty("Connection", "close"); // Connection must be closed in order to set length of next request ??
+        // conn.setRequestProperty("Connection", "close"); // Connection must be closed in order to set length of next request ??
         conn.setReadTimeout(timeOut);
         conn.setConnectTimeout(timeOut);
         conn.setRequestMethod("POST");
@@ -178,7 +177,7 @@ public class RegistrationIntentService extends IntentService {
 
         try {
             // Get authentication key
-            HttpResultHelper httpResult = httpPost("https://ioPush.net/app/api/getAuthToken", "oliv4945@gmail.com", "aatest", null, null, 7000);
+            HttpResultHelper httpResult = httpPost("https://ioPush.net/app/api/getAuthToken", "**@ioPush.net", "***", null, null, 7000);
             BufferedReader in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
             result = "";
             while ((inputLine = in.readLine()) != null) {
@@ -186,15 +185,21 @@ public class RegistrationIntentService extends IntentService {
             }
             if (httpResult.getStatusCode() == 200) {
                 Log.i(TAG, "Result : " + result);
-                String data="{\"service\": \"" + "AndroidGCM" +
-                        "\", \"regId\": \"" + regId +
-                        "\", \"name\": \"" + "Xiaomi Redmi" + "\"}";
+                JSONObject data = new JSONObject();
+                try {
+                    data.put("service", "AndroidGCM");
+                    data.put("regId", regId);
+                    data.put("name", "Xiaomi Redmi");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                Log.i(TAG, data.toString());
                 String[][] headers = new String[2][2];
                 headers[0][0] = "authentication_token";
                 headers[0][1] = result;
                 headers[1][0] = "Content-Type";
                 headers[1][1] = "application/json";
-                httpResult = httpPost("https://ioPush.net/app/api/addDevice", null, null, data, headers, 7000);
+                httpResult = httpPost("https://ioPush.net/app/api/addDevice", null, null, data.toString(), headers, 7000);
                 in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
                 result = "";
                 while ((inputLine = in.readLine()) != null) {
