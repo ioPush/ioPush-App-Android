@@ -46,14 +46,10 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         mInformationTextView = (TextView) findViewById(R.id.informationTextView);
-        Log.i(TAG, "Passe 2");
         if (checkPlayServices()) {
             // Start IntentService to register this application with GCM.
-            Log.i(TAG, "Passe 3");
             Intent intent = new Intent(this, RegistrationIntentService.class);
-            Log.i(TAG, "Passe 4");
             startService(intent);
-            Log.i(TAG, "Passe 5");
         }
     }
 

@@ -31,6 +31,8 @@ import java.net.HttpURLConnection;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
 public class RegistrationIntentService extends IntentService {
 
     private static final String TAG = "RegIntentService";
@@ -63,7 +65,7 @@ public class RegistrationIntentService extends IntentService {
                 sendRegistrationToServer(token);
 
                 // Subscribe to topic channels
-                subscribeTopics(token);
+                // subscribeTopics(token);
 
                 // You should store a boolean that indicates whether the generated token has been
                 // sent to your server. If the boolean is false, send the token to your server,
@@ -95,7 +97,7 @@ public class RegistrationIntentService extends IntentService {
      * @return
      * @throws IOException
      */
-    private HttpResultHelper httpPost(String urlStr, String user, String password, String data, String[][] headers, int timeOut) throws IOException
+    private HttpResultHelper httpPost(String urlStr, String user, String password, String data, ArrayList<String[]> headers, int timeOut) throws IOException
     {
         // Set url
         URL url = new URL(urlStr);
@@ -127,6 +129,7 @@ public class RegistrationIntentService extends IntentService {
         conn.setConnectTimeout(timeOut);
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
+        /*
         try {
             for (int i=0; i<=headers.length; i++) {
                 // conn.setRequestProperty("authentication_token", authToken);
@@ -134,6 +137,12 @@ public class RegistrationIntentService extends IntentService {
             }
         } catch (NullPointerException e) {
         } catch (IndexOutOfBoundsException e) {
+        }
+        */
+        if (headers != null) {
+            for (int i = 0; i < headers.size(); i++) {
+                conn.setRequestProperty(headers.get(i)[0], headers.get(i)[1]);
+            }
         }
 
         if (data != null) {
@@ -165,7 +174,7 @@ public class RegistrationIntentService extends IntentService {
     }
 
     /**
-     * Persist registration to third-party servers.
+     * Persist registration to ioPsuh server.
      *
      * Modify this method to associate the user's GCM registration token with any server-side account
      * maintained by your application.
@@ -177,14 +186,14 @@ public class RegistrationIntentService extends IntentService {
 
         try {
             // Get authentication key
-            HttpResultHelper httpResult = httpPost("https://ioPush.net/app/api/getAuthToken", "**@ioPush.net", "***", null, null, 7000);
+            HttpResultHelper httpResult = httpPost("https://ioPush.net/app/api/getAuthToken", "**@ioPush.net", "**", null, null, 7000);
             BufferedReader in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
             result = "";
             while ((inputLine = in.readLine()) != null) {
                 result += inputLine;
             }
             if (httpResult.getStatusCode() == 200) {
-                Log.i(TAG, "Result : " + result);
+                Log.i(TAG, "Auth_token result : " + result);
                 JSONObject data = new JSONObject();
                 try {
                     data.put("service", "AndroidGCM");
@@ -194,11 +203,9 @@ public class RegistrationIntentService extends IntentService {
                     e.printStackTrace();
                 }
                 Log.i(TAG, data.toString());
-                String[][] headers = new String[2][2];
-                headers[0][0] = "authentication_token";
-                headers[0][1] = result;
-                headers[1][0] = "Content-Type";
-                headers[1][1] = "application/json";
+                ArrayList<String[]> headers = new ArrayList<>();
+                headers.add(new String[]{"authentication_token", result});
+                headers.add(new String[]{"Content-Type", "application/json"});
                 httpResult = httpPost("https://ioPush.net/app/api/addDevice", null, null, data.toString(), headers, 7000);
                 in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
                 result = "";
@@ -206,13 +213,13 @@ public class RegistrationIntentService extends IntentService {
                     result += inputLine;
                 }
                 if (httpResult.getStatusCode() == 200) {
-                    Log.i(TAG, "Result 2 : " + result);
+                    Log.i(TAG, "Send regId result : " + result);
                 } else {
-                    Log.i(TAG, "Failed 2 to issue post request, error code : " + httpResult.getStatusCode());
-                    Log.i(TAG, "Error 2 message : " + result);
+                    Log.i(TAG, "Failed to send regId, error code : " + httpResult.getStatusCode());
+                    Log.i(TAG, "Error message : " + result);
                 }
             } else {
-                Log.i(TAG, "Failed to issue post request, error code : " + httpResult.getStatusCode());
+                Log.i(TAG, "Failed to get auth_token, error code : " + httpResult.getStatusCode());
                 Log.i(TAG, "Error message : " + result);
             }
 
