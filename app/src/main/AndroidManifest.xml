@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="net.iobook.noterf">
+    package="net.iobook.noterf" >
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
-    <permission android:name="net.iobook.noterf.permission.C2D_MESSAGE"
+    <permission
+        android:name="net.iobook.noterf.permission.C2D_MESSAGE"
         android:protectionLevel="signature" />
-    <uses-permission android:name="net.iobook.noterf..permission.C2D_MESSAGE" />
 
+    <uses-permission android:name="net.iobook.noterf..permission.C2D_MESSAGE" />
 //https://developers.google.com/cloud-messaging/android/client
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme" >
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -34,30 +35,42 @@
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+
                 <category android:name="com.example.gcm" />
             </intent-filter>
         </receiver>
+
         <service
-            android:name="net.iobook.noterf.MyGcmListenerService"
+            android:name=".MyGcmListenerService"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
         <service
-            android:name="net.iobook.noterf.MyInstanceIDListenerService"
-            android:exported="false">
+            android:name=".MyInstanceIDListenerService"
+            android:exported="false" >
             <intent-filter>
-                <action android:name="com.google.android.gms.iid.InstanceID"/>
+                <action android:name="com.google.android.gms.iid.InstanceID" />
             </intent-filter>
         </service>
         <service
-            android:name="net.iobook.noterf.RegistrationIntentService"
+            android:name=".RegistrationIntentService"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
             </intent-filter>
         </service>
+
+        <activity
+            android:name=".logBook"
+            android:label="@string/title_activity_log_book"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="net.iobook.noterf.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

@@ -9,6 +9,8 @@ import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -19,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final String TAG = "MainActivity";
+    public final static String IOPUSH_EMAIL = "net.iobook.noterf.ioPushEmail";
+    public final static String IOPUSH_PWD = "net.iobook.noterf.ioPushPwd";
 
     private BroadcastReceiver mRegistrationBroadcastReceiver;
     private ProgressBar mRegistrationProgressBar;
@@ -85,6 +89,20 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Called when the user clicks the login button
+     */
+    public void loginUser(View view) {
+        Intent intent = new Intent(this, logBook.class);
+        EditText editText = (EditText) findViewById(R.id.ioPushEmail);
+        String email = editText.getText().toString();
+        editText = (EditText) findViewById(R.id.ioPushPwd);
+        String pwd = editText.getText().toString();
+        intent.putExtra(IOPUSH_EMAIL, email);
+        intent.putExtra(IOPUSH_PWD, pwd);
+        startActivity(intent);
     }
 
 }

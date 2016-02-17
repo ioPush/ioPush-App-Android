@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">noteRF</string>
     <string name="action_settings">Settings</string>
@@ -8,4 +9,8 @@
     <string name="token_error_message">An error occurred while either fetching the InstanceID token,
         sending the fetched token to the server or subscribing to the PubSub topic. Please try
         running the sample again.</string>
+    <string name="ioPushEmail">Enter your email</string>
+    <string name="ioPushPwd">Enter your password</string>
+    <string name="btn_ioPushLogin">Sign-in</string>
+    <string name="title_activity_log_book">logBook</string>
 </resources>
