@@ -9,8 +9,6 @@ import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -22,39 +20,51 @@ public class MainActivity extends AppCompatActivity {
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final String TAG = "MainActivity";
     public final static String IOPUSH_EMAIL = "net.iobook.noterf.ioPushEmail";
-    public final static String IOPUSH_PWD = "net.iobook.noterf.ioPushPwd";
+    public final static String IOPUSH_AUTH_TOKEN = "net.iobook.noterf.ioPushAuthToken";
 
     private BroadcastReceiver mRegistrationBroadcastReceiver;
+    private BroadcastReceiver mAuthenticationBroadcastReceiver;
     private ProgressBar mRegistrationProgressBar;
     private TextView mInformationTextView;
+    private SharedPreferences userSharedPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mRegistrationProgressBar = (ProgressBar) findViewById(R.id.registrationProgressBar);
-        mRegistrationBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
-                SharedPreferences sharedPreferences =
-                        PreferenceManager.getDefaultSharedPreferences(context);
-                boolean sentToken = sharedPreferences
-                        .getBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, false);
-                if (sentToken) {
-                    mInformationTextView.setText(getString(R.string.gcm_send_message));
-                } else {
-                    mInformationTextView.setText(getString(R.string.token_error_message));
-                }
-            }
-        };
         mInformationTextView = (TextView) findViewById(R.id.informationTextView);
-        if (checkPlayServices()) {
-            // Start IntentService to register this application with GCM.
-            Intent intent = new Intent(this, RegistrationIntentService.class);
-            startService(intent);
+        mRegistrationProgressBar = (ProgressBar) findViewById(R.id.registrationProgressBar);
+        mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
+
+
+        // Restore nickname and authToken
+        userSharedPref = getApplicationContext().getSharedPreferences(
+                getString(R.string.preferenceUser), Context.MODE_PRIVATE);
+        String nickname = userSharedPref.getString(getString(R.string.preferenceUserNickname), null);
+        String authToken = userSharedPref.getString(getString(R.string.preferenceUserAuthToken), null);
+
+        // Get them if not stored
+        if ((nickname == null) || (authToken == null)){
+            Log.i(TAG, "Ask for credential details");
+            // Wait for credential signal
+            mAuthenticationBroadcastReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String nickname = userSharedPref.getString(getString(R.string.preferenceUserNickname), null);
+                    String message = nickname + " " + getString(R.string.user_signed_in);
+                    mInformationTextView.setText(message);
+                    startRegistrationIntentService();
+                }
+            };
+            // Fire login activity
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+        } else {
+            startRegistrationIntentService();
         }
+
+
     }
 
     @Override
@@ -62,6 +72,8 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
                 new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
+        LocalBroadcastManager.getInstance(this).registerReceiver(mAuthenticationBroadcastReceiver,
+                new IntentFilter(QuickstartPreferences.AUTHENTICATION_COMPLETE));
     }
 
     @Override
@@ -91,18 +103,38 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    /**
-     * Called when the user clicks the login button
+    /*
+     * Start RegistrationIntentService
      */
-    public void loginUser(View view) {
-        Intent intent = new Intent(this, logBook.class);
-        EditText editText = (EditText) findViewById(R.id.ioPushEmail);
-        String email = editText.getText().toString();
-        editText = (EditText) findViewById(R.id.ioPushPwd);
-        String pwd = editText.getText().toString();
-        intent.putExtra(IOPUSH_EMAIL, email);
-        intent.putExtra(IOPUSH_PWD, pwd);
-        startActivity(intent);
+    private void startRegistrationIntentService() {
+        // Register GCM
+        mRegistrationProgressBar = (ProgressBar) findViewById(R.id.registrationProgressBar);
+        mRegistrationBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
+                SharedPreferences sharedPreferences =
+                        PreferenceManager.getDefaultSharedPreferences(context);
+                boolean sentToken = sharedPreferences
+                        .getBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, false);
+                if (sentToken) {
+                    String nickname = userSharedPref.getString(getString(R.string.preferenceUserNickname), null);
+                    String message = getString(R.string.hello) + " "+ nickname + " " + getString(R.string.gcm_send_message);
+                    mInformationTextView.setText(message);
+                } else {
+                    mInformationTextView.setText(getString(R.string.token_error_message));
+                }
+            }
+        };
+        mInformationTextView = (TextView) findViewById(R.id.informationTextView);
+        if (checkPlayServices()) {
+            // Start IntentService to register this application with GCM.
+            Log.i(TAG, "Get GCM regId");
+            String authToken = userSharedPref.getString(getString(R.string.preferenceUserAuthToken), null);
+            Intent regIntent = new Intent(this, RegistrationIntentService.class);
+            regIntent.putExtra(IOPUSH_AUTH_TOKEN, authToken);
+            startService(regIntent);
+        }
     }
 
 }

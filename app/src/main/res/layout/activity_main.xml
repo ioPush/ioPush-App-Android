@@ -24,23 +24,5 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <EditText android:id="@+id/ioPushEmail"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="textEmailAddress"
-        android:textColorHint="@color/darkGrey"
-        android:hint="@string/ioPushEmail" />
-
-    <EditText android:id="@+id/ioPushPwd"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="textPassword"
-        android:textColorHint="@color/darkGrey"
-        android:hint="@string/ioPushPwd" />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/btn_ioPushLogin"
-        android:onClick="loginUser" />
 
 </LinearLayout>

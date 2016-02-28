@@ -2,9 +2,8 @@
 <resources>
     <string name="app_name">noteRF</string>
     <string name="action_settings">Settings</string>
-
-    <string name="gcm_send_message">Token retrieved and sent to server! You can now use gcmsender to
-        send downstream messages to this app.</string>
+    <string name="hello">Hello</string>
+    <string name="gcm_send_message">! Go to ioPush.net to test push notifications.</string>
     <string name="registering_message">Generating InstanceID token...</string>
     <string name="token_error_message">An error occurred while either fetching the InstanceID token,
         sending the fetched token to the server or subscribing to the PubSub topic. Please try
@@ -13,4 +12,23 @@
     <string name="ioPushPwd">Enter your password</string>
     <string name="btn_ioPushLogin">Sign-in</string>
     <string name="title_activity_log_book">logBook</string>
+    <string name="title_activity_login">Sign in</string>
+    <string name="user_signed_in">signed in, registering device.</string>
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
+
+    <!-- Preferences string -->
+    <string name="preferenceUser">net.ioPush.preferenceUser</string>
+    <string name="preferenceUserNickname">net.ioPush.preferenceUser.Nickname</string>
+    <string name="preferenceUserAuthToken">net.ioPush.preferenceUser.AuthToken</string>
 </resources>

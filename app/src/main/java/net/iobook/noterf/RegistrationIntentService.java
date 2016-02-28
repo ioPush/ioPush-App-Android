@@ -15,18 +15,8 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
 import java.io.IOException;
-
-import java.io.InputStream;
-import java.net.URL;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import android.util.Base64;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -54,15 +44,10 @@ public class RegistrationIntentService extends IntentService {
                 // are local.
                 // R.string.gcm_defaultSenderId (the Sender ID) is typically derived from google-services.json.
                 // See https://developers.google.com/cloud-messaging/android/start for details on this file.
-                // [START get_token]
                 InstanceID instanceID = InstanceID.getInstance(this);
                 String token = instanceID.getToken(getString(R.string.gcm_defaultSenderId),
                         GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                // [END get_token]
-                Log.i(TAG, "GCM Registration Token: " + token);
-
-                // TODO: Implement this method to send any registration to your app's servers.
-                sendRegistrationToServer(token);
+                sendRegistrationToServer(token, intent.getStringExtra(MainActivity.IOPUSH_AUTH_TOKEN));
 
                 // Subscribe to topic channels
                 // subscribeTopics(token);
@@ -87,93 +72,6 @@ public class RegistrationIntentService extends IntentService {
     }
 
     /**
-     * HTTP request with POST method
-     * @param urlStr
-     * @param user
-     * @param password
-     * @param data
-     * @param headers
-     * @param timeOut
-     * @return
-     * @throws IOException
-     */
-    private HttpResultHelper httpPost(String urlStr, String user, String password, String data, ArrayList<String[]> headers, int timeOut) throws IOException
-    {
-        // Set url
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-        // If secure connection
-        if (urlStr.startsWith("https")) {
-            try {
-                SSLContext sc;
-                sc = SSLContext.getInstance("TLS");
-                sc.init(null, null, new java.security.SecureRandom());
-                ((HttpsURLConnection)conn).setSSLSocketFactory(sc.getSocketFactory());
-            } catch (Exception e) {
-                Log.d(TAG, "Failed to construct SSL object", e);
-            }
-        }
-
-
-        // Use this if you need basic authentication
-        if ((user != null) && (password != null)) {
-            String userPass = user + ":" + password;
-            String basicAuth = "Basic " + Base64.encodeToString(userPass.getBytes(), Base64.DEFAULT);
-            conn.setRequestProperty("Authorization", basicAuth);
-        }
-
-        // Set Timeout and method
-        // conn.setRequestProperty("Connection", "close"); // Connection must be closed in order to set length of next request ??
-        conn.setReadTimeout(timeOut);
-        conn.setConnectTimeout(timeOut);
-        conn.setRequestMethod("POST");
-        conn.setDoOutput(true);
-        /*
-        try {
-            for (int i=0; i<=headers.length; i++) {
-                // conn.setRequestProperty("authentication_token", authToken);
-                conn.setRequestProperty(headers[i][0], headers[i][1]);
-            }
-        } catch (NullPointerException e) {
-        } catch (IndexOutOfBoundsException e) {
-        }
-        */
-        if (headers != null) {
-            for (int i = 0; i < headers.size(); i++) {
-                conn.setRequestProperty(headers.get(i)[0], headers.get(i)[1]);
-            }
-        }
-
-        if (data != null) {
-            conn.setFixedLengthStreamingMode(data.getBytes().length);
-            OutputStream os = conn.getOutputStream();
-            BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(os, "UTF-8"));
-            writer.write(data);
-            writer.flush();
-            writer.close();
-            os.close();
-        }
-
-        InputStream inputStream = null;
-        try
-        {
-            inputStream = conn.getInputStream();
-        }
-        catch(IOException exception)
-        {
-            inputStream = conn.getErrorStream();
-        }
-
-        HttpResultHelper result = new HttpResultHelper();
-        result.setStatusCode(conn.getResponseCode());
-        result.setResponse(inputStream);
-
-        return result;
-    }
-
-    /**
      * Persist registration to ioPsuh server.
      *
      * Modify this method to associate the user's GCM registration token with any server-side account
@@ -181,34 +79,28 @@ public class RegistrationIntentService extends IntentService {
      *
      * @param regId The new token.
      */
-    private void sendRegistrationToServer(String regId) {
-        String result, inputLine = new String();
+    private void sendRegistrationToServer(String regId, String authToken) {
 
         try {
-            // Get authentication key
-            HttpResultHelper httpResult = httpPost("https://ioPush.net/app/api/getAuthToken", "**@ioPush.net", "**", null, null, 7000);
-            BufferedReader in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
-            result = "";
-            while ((inputLine = in.readLine()) != null) {
-                result += inputLine;
+            // Send authToken to the server
+            HttpHelper http = new HttpHelper(null, null, 7000);
+            JSONObject data = new JSONObject();
+            try {
+                data.put("service", "AndroidGCM");
+                data.put("regId", regId);
+                data.put("name", "TODO: Nom");
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-            if (httpResult.getStatusCode() == 200) {
-                Log.i(TAG, "Auth_token result : " + result);
-                JSONObject data = new JSONObject();
-                try {
-                    data.put("service", "AndroidGCM");
-                    data.put("regId", regId);
-                    data.put("name", "Xiaomi Redmi");
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                Log.i(TAG, data.toString());
-                ArrayList<String[]> headers = new ArrayList<>();
-                headers.add(new String[]{"authentication_token", result});
-                headers.add(new String[]{"Content-Type", "application/json"});
-                httpResult = httpPost("https://ioPush.net/app/api/addDevice", null, null, data.toString(), headers, 7000);
-                in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
-                result = "";
+            http.setUser(null);
+            http.setPassword(null);
+            ArrayList<String[]> headers = new ArrayList<>();
+            headers.add(new String[]{"authentication_token", authToken});
+            headers.add(new String[]{"Content-Type", "application/json"});
+            HttpResultHelper httpResult = http.post("https://ioPush.net/app/api/addDevice", data.toString(), headers);
+            BufferedReader in = new BufferedReader(new InputStreamReader(httpResult.getResponse()));
+            String result = "";
+            String inputLine;
                 while ((inputLine = in.readLine()) != null) {
                     result += inputLine;
                 }
@@ -218,11 +110,6 @@ public class RegistrationIntentService extends IntentService {
                     Log.i(TAG, "Failed to send regId, error code : " + httpResult.getStatusCode());
                     Log.i(TAG, "Error message : " + result);
                 }
-            } else {
-                Log.i(TAG, "Failed to get auth_token, error code : " + httpResult.getStatusCode());
-                Log.i(TAG, "Error message : " + result);
-            }
-
         } catch (Exception e) {
             Log.d(TAG, "Failed to issue post request", e);
         }
@@ -235,6 +122,7 @@ public class RegistrationIntentService extends IntentService {
      * @param token GCM token
      * @throws IOException if unable to reach the GCM PubSub service
      */
+    /*
     // [START subscribe_topics]
     private void subscribeTopics(String token) throws IOException {
         GcmPubSub pubSub = GcmPubSub.getInstance(this);
@@ -243,5 +131,5 @@ public class RegistrationIntentService extends IntentService {
         }
     }
     // [END subscribe_topics]
-
+    */
 }
